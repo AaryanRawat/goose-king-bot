@@ -1,4 +1,4 @@
 
 bot-env/
 
-* .env
+*.env
