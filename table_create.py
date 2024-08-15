@@ -1,20 +1,18 @@
 from peewee import PostgresqlDatabase, Model, CharField, DateTimeField, BigIntegerField, BooleanField
-import os
-from dotenv import load_dotenv
+from config import PG_DB, PG_USER, PG_PASSWORD, PG_HOST, PG_PORT
 import logging
 
-# Logging set up
 logging.basicConfig(level = logging.INFO)
 logger = logging.getLogger(__name__)
 
 load_dotenv()
 
 # Database connection settings
-db_name = os.getenv('PG_DB')
-db_user = os.getenv('PG_USER')
-db_password = os.getenv('PG_PASSWORD')
-db_host = os.getenv('PG_HOST')
-db_port = os.getenv('PG_PORT')
+db_name = os.getenv(PG_DB)
+db_user = os.getenv(PG_USER)
+db_password = os.getenv(PG_PASSWORD)
+db_host = os.getenv(PG_HOST)
+db_port = os.getenv(PG_PORT)
 
 # DB Connection
 try:
