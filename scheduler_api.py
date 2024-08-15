@@ -12,7 +12,8 @@ scheduler = AsyncIOScheduler()
 
 def create_event(event_name: str, event_datetime: datetime, channel_id: int):
     try:
-        event = ScheduledEvent.create(
+        with db.atomic():
+            event = ScheduledEvent.create(
             event_name = event_name,
             event_datetime = event_datetime,
             channel_id = channel_id,
@@ -21,7 +22,7 @@ def create_event(event_name: str, event_datetime: datetime, channel_id: int):
 
         schedule_reminders(event)
         return event
-
+        
     except Exception as e:
         logger.error(f"Failed to create '{event_name}': {e} ")
         return None
@@ -69,38 +70,41 @@ async def send_reminder(channel_id, event_name, event_time):
 
 def complete_event(event_id):
     try:
+        with db.atomic:
             event = ScheduledEvent.get(ScheduledEvent.id == event_id)
             event.completed = True
             event.save()
             delete_event(event.id)
 
     except Exception as e:
-            logger.error(f"Failed to complete event with ID {event_id}: {e}")
+        logger.error(f"Failed to complete event with ID {event_id}: {e}")
 
 def delete_event(event_id):
     try:
+        with db.atomic:
             event = ScheduledEvent.get(ScheduledEvent.id == event_id)
             event.delete_instance()
             logger.info(f"Event with ID {event_id} deleted successfully.")
 
     except Exception as e:
-            logger.error(f"Failed to delete event with ID {event_id}: {e}")
+        logger.error(f"Failed to delete event with ID {event_id}: {e}")
 
 def load_events():
     try:
+        with db.atomic:
             events = ScheduledEvent.select().where(ScheduledEvent.completed == False)
             for event in events:
                 if event.event_datetime > datetime.now(pytz.UTC):
                     schedule_reminders(event)
                     
     except Exception as e:
-            logger.error(f"Failed to load events: {e}")
+        logger.error(f"Failed to load events: {e}")
 
 # Ensures the scheduler stops cleanly
 def stop_scheduler():
     try:
-            scheduler.shutdown(wait=False)
+        scheduler.shutdown(wait=False)
 
     except Exception as e:
-            logger.error(f"Failed to stop the scheduler: {e}")
+        logger.error(f"Failed to stop the scheduler: {e}")
 
