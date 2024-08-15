@@ -5,14 +5,12 @@ import logging
 logging.basicConfig(level = logging.INFO)
 logger = logging.getLogger(__name__)
 
-load_dotenv()
-
 # Database connection settings
-db_name = os.getenv(PG_DB)
-db_user = os.getenv(PG_USER)
-db_password = os.getenv(PG_PASSWORD)
-db_host = os.getenv(PG_HOST)
-db_port = os.getenv(PG_PORT)
+db_name = PG_DB
+db_user = PG_HOST
+db_password = PG_PASSWORD
+db_host = PG_HOST
+db_port = PG_PORT
 
 # DB Connection
 try:
@@ -24,6 +22,7 @@ try:
         port=db_port
     )
     logger.info(f"Connected to the PostgreSQL database: {db_name}")
+
 except Exception as e:
     logger.error(f"Failed to connect to the PostgreSQL database: {e}")
     raise SystemExit(f"Database connection failed: {e}")
@@ -31,6 +30,7 @@ except Exception as e:
 class BaseModel(Model):
     class Meta:
         database = db
+
 class ScheduledEvent(BaseModel):
     event_name = CharField()
     event_datetime = DateTimeField()
@@ -42,8 +42,10 @@ def create_tables():
         db.connect(reuse_if_open=True)
         db.create_tables([ScheduledEvent])
         logger.info("Database tables created successfully.")
+
     except Exception as e:
         logger.error(f"Failed to create database tables: {e}")
+
     finally:
         if not db.is_closed():
             db.close()
@@ -53,8 +55,10 @@ def close_connection():
         if not db.is_closed():
             db.close()
             logger.info("Database connection closed successfully.")
+            
     except Exception as e:
         logger.error(f"Failed to close the database connection: {e}")
 
+# Only need to run this script once to create tables, otherwise used for schema
 if __name__ == "__main__":
     create_tables()

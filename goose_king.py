@@ -1,14 +1,11 @@
 # PRAISE THE GOOSE KING
-
 import nextcord
 from nextcord.ext import commands
 from config import DISCORD_TOKEN
-from api import load_events, scheduler, stop_scheduler
+from scheduler_api import load_events, scheduler, stop_scheduler
 from event_queue import enqueue_event
 import logging
 import dateparser
-import os
-from dotenv import load_dotenv
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -60,6 +57,6 @@ async def on_command_error(ctx, error):
 
 try:
     bot.run(DISCORD_TOKEN)
-    
+
 except Exception as e:
     logger.error(f"Failed to run the bot: {e}")

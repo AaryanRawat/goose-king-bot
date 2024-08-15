@@ -1,6 +1,6 @@
 from queue import Queue, Empty
 import threading
-from api import create_event
+from scheduler_api import create_event
 import logging
 
 logging.basicConfig(level=logging.INFO)

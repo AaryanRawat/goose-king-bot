@@ -1,7 +1,8 @@
-from db import ScheduledEvent, db, close_connection
+from schema import ScheduledEvent, db, close_connection
 from datetime import datetime, timedelta
 import pytz
-from apscheduler import AsyncIOScheduler, DateTrigger
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.date import DateTrigger
 import logging
 
 logging.basicConfig(level = logging.INFO)
@@ -55,51 +56,51 @@ def schedule_reminders(event):
     except Exception as e:
         logger.error(f"Failed to schedule completion for event '{event.event_name}': {e}")
     
-    async def send_reminder(channel_id, event_name, event_time):
-        try:
+async def send_reminder(channel_id, event_name, event_time):
+    try:
             channel = bot.get_channel(channel_id)
             if channel:
                 await channel.send(f"Reminder: The event **{event_name}** is coming up at {event_time.strftime('%Y-%m-%d %H:%M:%S %Z')}.")
             else:
                 logger.error(f"Channel ID {channel_id} not found for event '{event_name}'.")
 
-        except Exception as e:
-            logger.error(f"Failed to send reminder for event '{event_name}': {e}")
+    except Exception as e:
+        logger.error(f"Failed to send reminder for event '{event_name}': {e}")
 
-    def complete_event(event_id):
-        try:
+def complete_event(event_id):
+    try:
             event = ScheduledEvent.get(ScheduledEvent.id == event_id)
             event.completed = True
             event.save()
             delete_event(event.id)
 
-        except Exception as e:
+    except Exception as e:
             logger.error(f"Failed to complete event with ID {event_id}: {e}")
 
-    def delete_event(event_id):
-        try:
+def delete_event(event_id):
+    try:
             event = ScheduledEvent.get(ScheduledEvent.id == event_id)
             event.delete_instance()
             logger.info(f"Event with ID {event_id} deleted successfully.")
 
-        except Exception as e:
+    except Exception as e:
             logger.error(f"Failed to delete event with ID {event_id}: {e}")
 
-    def load_events():
-        try:
+def load_events():
+    try:
             events = ScheduledEvent.select().where(ScheduledEvent.completed == False)
             for event in events:
                 if event.event_datetime > datetime.now(pytz.UTC):
                     schedule_reminders(event)
                     
-        except Exception as e:
+    except Exception as e:
             logger.error(f"Failed to load events: {e}")
 
-    # Ensures the scheduler stops cleanly
-    def stop_scheduler():
-        try:
+# Ensures the scheduler stops cleanly
+def stop_scheduler():
+    try:
             scheduler.shutdown(wait=False)
 
-        except Exception as e:
+    except Exception as e:
             logger.error(f"Failed to stop the scheduler: {e}")
 
