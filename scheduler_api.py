@@ -127,6 +127,7 @@ def load_events():
 def stop_scheduler():
     try:
         scheduler.shutdown(wait=False)
+        logger.info("Scheduler stopped successfully")
 
     except Exception as e:
         logger.error(f"Failed to stop the scheduler: {e}")
