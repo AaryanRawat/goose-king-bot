@@ -30,15 +30,6 @@ async def on_ready():
         logger.error(f"Failed during Goose King startup: {e}")
         await bot.close()
 
-@bot.event
-async def on_disconnect():
-    try:
-        stop_scheduler()
-        logger.info("Bot disconnected and scheduler stopped.")
-        
-    except Exception as e:
-        logger.error(f"Error during Goose King disconnection: {e}")
-
 @bot.slash_command(name='schedule', description="Schedule an event with a date and time")
 async def schedule_event(interaction: Interaction,
  date_time: str = SlashOption(description="Date/Time in 'YYYY-MM-DD HH:MM' format (EST)"),
@@ -74,6 +65,16 @@ def parse_datetime(date_time_str):
 async def on_command_error(ctx, error):
     logger.error(f"Command error: {error}")
     await ctx.send(f"An error occurred: {error}")
+
+@bot.event
+async def on_disconnect():
+    stop_scheduler()
+    logger.info("Bot disconnected.")
+
+@bot.event
+async def on_shutdown():
+    stop_scheduler()
+    logger.info("Bot is shutting down.")
 
 try:
     bot.run(DISCORD_TOKEN)
