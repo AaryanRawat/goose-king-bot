@@ -57,12 +57,12 @@ def schedule_reminders(event):
                     args = [event.channel_id, event.event_name, reminder_time_est])
             
             except Exception as e:
-                logger.error(f"Failed to schedule reminder for event '{event.event_name}' at {reminder_time}: {e}")
+                logger.error(f"Failed to schedule reminder for event '{event.event_name}' at {reminder_time_est}: {e}")
     
     try:
         scheduler.add_job(
             complete_event, 
-            trigger=DateTrigger(event.event_datetime), 
+            trigger=DateTrigger(event_datetime_est), 
             args=[event.id])
 
     except Exception as e:
@@ -85,7 +85,7 @@ def complete_event(event_id):
         event = ScheduledEvent.get(ScheduledEvent.id == event_id)
         event.completed = True
         event.save()         
-        delete_event(event.id)
+        #delete_event(event.id)
 
     except Exception as e:
         logger.error(f"Failed to complete event with ID {event_id}: {e}")
@@ -112,8 +112,15 @@ def load_events():
     try:
         db.connect(reuse_if_open=True)
         events = ScheduledEvent.select().where(ScheduledEvent.completed == False)
+        now_utc = datetime.now(pytz.UTC)  # Get the current time in UTC
+
         for event in events:
-            if event.event_datetime > datetime.now(pytz.UTC):
+            if event.event_datetime.tzinfo is None:
+                event_datetime_aware = pytz.UTC.localize(event.event_datetime)
+            else:
+                event_datetime_aware = event.event_datetime
+
+            if event_datetime_aware > now_utc:
                 schedule_reminders(event)
 
     except Exception as e:

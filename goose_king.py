@@ -32,7 +32,7 @@ async def on_ready():
 
 @bot.slash_command(name='schedule', description="Schedule an event with a date and time")
 async def schedule_event(interaction: Interaction,
- date_time: str = SlashOption(description="Date/Time in 'YYYY-MM-DD HH:MM' format (EST)"),
+ date_time: str = SlashOption(description="Date/Time in 'YYYY-MM-DD HH:MM' format (EST), 24 Hour System"),
  event_name: str = SlashOption(description="Name of the Event")):
     try:
         event_datetime = parse_datetime(date_time)
@@ -40,26 +40,25 @@ async def schedule_event(interaction: Interaction,
             await interaction.response.send_message("Could not understand the date and time. Please try again.")
             return
 
-        # Storage in UTC, collection and display in EST
-        event_datetime_utc = event_datetime.astimezone(pytz.UTC) 
+        event_dt_display = event_datetime
+        # Storage in UTC, collection and display in EST/EDT
+        event_datetime = event_datetime.astimezone(pytz.UTC) 
         
-        enqueue_event(event_name, event_datetime_utc, interaction.channel_id)
-        await ctx.send(f"Event '{event_name}' scheduled for {event_datetime.strftime('%Y-%m-%d %H:%M %Z')}")
+        enqueue_event(event_name, event_datetime, interaction.channel_id)
+        await interaction.response.send_message(f"Event '{event_name}' scheduled for {event_dt_display.strftime('%Y-%m-%d %H:%M')}")
 
     except Exception as e:
         logger.error(f"Failed to schedule event '{event_name}': {e}")
         await interaction.response.send_message(f"Failed to schedule event '{event_name}': {e}")
 
 def parse_datetime(date_time_str):
-    # Parse the date and time with dateparser
+    # Parse the date and time with dateparser, should already be in EST
     dt = dateparser.parse(date_time_str, settings={'RETURN_AS_TIMEZONE_AWARE': True, 'PREFER_DATES_FROM': 'future'})
     
     if dt is None:
         return None
     
-    # Convert to EST
-    dt_est = parsed_dt.astimezone(EST)
-    return dt_est.replace(second = 0, microsecond = 0)
+    return dt.replace(second = 0, microsecond = 0)
 
 @bot.event
 async def on_command_error(ctx, error):

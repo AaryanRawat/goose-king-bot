@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 # Database connection settings
 db_name = PG_DB
-db_user = PG_HOST
+db_user = PG_USER
 db_password = PG_PASSWORD
 db_host = PG_HOST
 db_port = PG_PORT
@@ -55,7 +55,7 @@ def close_connection():
         if not db.is_closed():
             db.close()
             logger.info("Database connection closed successfully.")
-            
+
     except Exception as e:
         logger.error(f"Failed to close the database connection: {e}")
 
