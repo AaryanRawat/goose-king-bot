@@ -15,6 +15,20 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix = '!', intents = intents)
 
+EST = pytz.timezone('America/New_York')
+
+# Example: Parsing a date and time provided by the user
+def parse_datetime(date_time_str):
+    # Parse the date and time with dateparser
+    dt = dateparser.parse(date_time_str, settings={'RETURN_AS_TIMEZONE_AWARE': True, 'PREFER_DATES_FROM': 'future'})
+    
+    if dt is None:
+        return None
+    
+    # Convert to EST
+    dt_est = parsed_dt.astimezone(EST)
+    return dt_est
+
 @bot.event
 async def on_ready():
     try:
@@ -38,12 +52,15 @@ async def on_disconnect():
 @bot.command(name='schedule')
 async def schedule_event(ctx, date_time: str, *, event_name: str):
     try:
-        event_datetime = dateparser.parse(date_time, settings={'TIMEZONE': 'UTC', 'RETURN_AS_TIMEZONE_AWARE': True})
+        event_datetime = parse_datetime(date_time)
         if event_datetime is None:
             await ctx.send("Could not understand the date and time. Please try again.")
             return
+
+        # Storage in UTC, collection and display in EST
+        event_datetime_utc = event_datetime.astimezone(pytz.UTC) 
         
-        enqueue_event(event_name, event_datetime, ctx.channel.id)
+        enqueue_event(event_name, event_datetime_utc, ctx.channel.id)
         await ctx.send(f"Event '{event_name}' scheduled for {event_datetime.strftime('%Y-%m-%d %H:%M:%S %Z')}")
 
     except Exception as e:
