@@ -60,7 +60,7 @@ def schedule_reminders(bot, event):
                 scheduler.add_job(
                     send_reminder, 
                     trigger = DateTrigger(reminder_time), 
-                    args = [bot, event.channel_id, event.event_name, reminder_time_est])
+                    args = [bot, event.channel_id, event.event_name, event_datetime_est])
             
             except Exception as e:
                 logger.error(f"Failed to schedule reminder for event '{event.event_name}' at {reminder_time_est}: {e}")
@@ -79,7 +79,7 @@ async def send_reminder(bot, channel_id, event_name, event_time):
         channel = bot.get_channel(channel_id)
         if channel:
             asyncio.run_coroutine_threadsafe(
-                channel.send(f"Reminder: The event **{event_name}** is coming up at {event_time.strftime('%Y-%m-%d %H:%M:%S %Z')}."),
+                channel.send(f"Reminder: The event **{event_name}** is coming up at {event_time.strftime('%Y-%m-%d %H:%M %Z')}."),
                 bot.loop
             )
         else:
