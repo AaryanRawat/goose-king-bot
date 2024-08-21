@@ -1,6 +1,6 @@
 from schema import ScheduledEvent, db, close_connection
-from datetime import datetime, timedelta
-import pytz
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.date import DateTrigger
 import logging
@@ -10,7 +10,8 @@ logger = logging.getLogger(__name__)
 
 scheduler = AsyncIOScheduler()
 
-EST = pytz.timezone('America/New_York')
+EST = ZoneInfo('America/New_York')
+UTC = ZoneInfo('UTC')
 
 def create_event(event_name: str, event_datetime: datetime, channel_id: int):
     try:
@@ -34,7 +35,11 @@ def create_event(event_name: str, event_datetime: datetime, channel_id: int):
             db.close()
 
 def schedule_reminders(event):
-    now_utc = datetime.now(pytz.utc)
+    now_utc = datetime.now().astimezone(UTC)
+
+    if(event.event_datetime.tzinfo != UTC or event.event_datetime.tzinfo == None):
+        event.event_datetime = event.event_datetime.replace(tzinfo=UTC)
+
     # Convert to EST for display
     event_datetime_est = event.event_datetime.astimezone(EST)
 
@@ -49,7 +54,7 @@ def schedule_reminders(event):
         reminder_time = event.event_datetime - interval
 
         if reminder_time > now_utc:
-            reminder_time_est = reminder_time_utc.astimezone(EST)
+            reminder_time_est = reminder_time.astimezone(EST)
             try:
                 scheduler.add_job(
                     send_reminder, 
@@ -112,11 +117,11 @@ def load_events():
     try:
         db.connect(reuse_if_open=True)
         events = ScheduledEvent.select().where(ScheduledEvent.completed == False)
-        now_utc = datetime.now(pytz.UTC)  # Get the current time in UTC
+        now_utc = datetime.now(UTC)  # Get the current time in UTC
 
         for event in events:
             if event.event_datetime.tzinfo is None:
-                event_datetime_aware = pytz.UTC.localize(event.event_datetime)
+                event_datetime_aware = event.event_datetime.replace(tzinfo=UTC)
             else:
                 event_datetime_aware = event.event_datetime
 

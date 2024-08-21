@@ -7,7 +7,8 @@ from scheduler_api import load_events, scheduler, stop_scheduler
 from event_queue import enqueue_event
 import logging
 import dateparser
-import pytz
+from zoneinfo import ZoneInfo
+from datetime import datetime, timezone
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -17,7 +18,8 @@ intents.message_content = True
 
 bot = commands.Bot(intents = intents)
 
-EST = pytz.timezone('America/New_York')
+EST = ZoneInfo('America/New_York')
+UTC = ZoneInfo('UTC')
 
 @bot.event
 async def on_ready():
@@ -40,12 +42,12 @@ async def schedule_event(interaction: Interaction,
             await interaction.response.send_message("Could not understand the date and time. Please try again.")
             return
 
-        event_dt_display = event_datetime
+        event_dt_display = event_datetime.replace(tzinfo=EST)
         # Storage in UTC, collection and display in EST/EDT
-        event_datetime = event_datetime.astimezone(pytz.UTC) 
+        event_datetime = event_dt_display.astimezone(UTC) 
         
         enqueue_event(event_name, event_datetime, interaction.channel_id)
-        await interaction.response.send_message(f"Event '{event_name}' scheduled for {event_dt_display.strftime('%Y-%m-%d %H:%M')}")
+        await interaction.response.send_message(f"Event '{event_name}' scheduled for {event_dt_display.strftime('%Y-%m-%d %H:%M')} hours")
 
     except Exception as e:
         logger.error(f"Failed to schedule event '{event_name}': {e}")
@@ -53,7 +55,7 @@ async def schedule_event(interaction: Interaction,
 
 def parse_datetime(date_time_str):
     # Parse the date and time with dateparser, should already be in EST
-    dt = dateparser.parse(date_time_str, settings={'RETURN_AS_TIMEZONE_AWARE': True, 'PREFER_DATES_FROM': 'future'})
+    dt = dateparser.parse(date_time_str, settings={'RETURN_AS_TIMEZONE_AWARE': False, 'PREFER_DATES_FROM': 'future'})
     
     if dt is None:
         return None
