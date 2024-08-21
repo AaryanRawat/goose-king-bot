@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.date import DateTrigger
 import logging
+import asyncio
 
 logging.basicConfig(level = logging.INFO)
 logger = logging.getLogger(__name__)
@@ -13,7 +14,7 @@ scheduler = AsyncIOScheduler()
 EST = ZoneInfo('America/New_York')
 UTC = ZoneInfo('UTC')
 
-def create_event(event_name: str, event_datetime: datetime, channel_id: int):
+def create_event(bot,event_name: str, event_datetime: datetime, channel_id: int):
     try:
         db.connect(reuse_if_open=True)
         event = ScheduledEvent.create(
@@ -23,7 +24,7 @@ def create_event(event_name: str, event_datetime: datetime, channel_id: int):
             completed = False
         )
 
-        schedule_reminders(event)
+        schedule_reminders(bot, event)
         return event
         
     except Exception as e:
@@ -34,7 +35,7 @@ def create_event(event_name: str, event_datetime: datetime, channel_id: int):
         if not db.is_closed():
             db.close()
 
-def schedule_reminders(event):
+def schedule_reminders(bot, event):
     now_utc = datetime.now().astimezone(UTC)
 
     if(event.event_datetime.tzinfo != UTC or event.event_datetime.tzinfo == None):
@@ -59,7 +60,7 @@ def schedule_reminders(event):
                 scheduler.add_job(
                     send_reminder, 
                     trigger = DateTrigger(reminder_time), 
-                    args = [event.channel_id, event.event_name, reminder_time_est])
+                    args = [bot, event.channel_id, event.event_name, reminder_time_est])
             
             except Exception as e:
                 logger.error(f"Failed to schedule reminder for event '{event.event_name}' at {reminder_time_est}: {e}")
@@ -73,11 +74,14 @@ def schedule_reminders(event):
     except Exception as e:
         logger.error(f"Failed to schedule completion for event '{event.event_name}': {e}")
     
-async def send_reminder(channel_id, event_name, event_time):
+async def send_reminder(bot, channel_id, event_name, event_time):
     try:
         channel = bot.get_channel(channel_id)
         if channel:
-            await channel.send(f"Reminder: The event **{event_name}** is coming up at {event_time.strftime('%Y-%m-%d %H:%M:%S %Z')}.")
+            asyncio.run_coroutine_threadsafe(
+                channel.send(f"Reminder: The event **{event_name}** is coming up at {event_time.strftime('%Y-%m-%d %H:%M:%S %Z')}."),
+                bot.loop
+            )
         else:
            logger.error(f"Channel ID {channel_id} not found for event '{event_name}'.")
 

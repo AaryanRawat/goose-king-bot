@@ -46,7 +46,7 @@ async def schedule_event(interaction: Interaction,
         # Storage in UTC, collection and display in EST/EDT
         event_datetime = event_dt_display.astimezone(UTC) 
         
-        enqueue_event(event_name, event_datetime, interaction.channel_id)
+        enqueue_event(bot, event_name, event_datetime, interaction.channel_id)
         await interaction.response.send_message(f"Event '{event_name}' scheduled for {event_dt_display.strftime('%Y-%m-%d %H:%M')} hours")
 
     except Exception as e:
